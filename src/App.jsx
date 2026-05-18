@@ -276,8 +276,8 @@ if (pauseRef.current > 0) {
 
       shape:
         signal === "BIG"
-          ? "arrowDown"
-          : "arrowUp",
+          ? "arrowUp"
+          : "arrowDown",
 
       text:
         signal === "BIG"
@@ -303,11 +303,8 @@ if (pauseRef.current > 0) {
 
         color: "#ffff00",
 
-        shape:
-          signal === "BIG"
-            ? "arrowDown"
-            : "arrowUp",
-
+        shape: "circle",
+          
         text: "W",
       });
 
@@ -343,8 +340,8 @@ if (pauseRef.current > 0) {
         shape:
           predictSideRef.current ===
           "BIG"
-            ? "arrowDown"
-            : "arrowUp",
+            ? "arrowUp"
+            : "arrowDown",
 
         text:
           `${loseCountRef.current}${
