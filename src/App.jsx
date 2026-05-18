@@ -361,10 +361,10 @@ if (pauseRef.current > 0) {
 // 🔥 SMART SIGNAL ARROW SYSTEM
 // ==================================================
 
-// 🟢 SMALL streak >= 5
+// 🟢 SMALL streak >= 6
 if (
   signal === "SMALL" &&
-  streakRef.current >= 5
+  streakRef.current >= 6
 ) {
   markersRef.current.push({
   time: candle.time,
@@ -376,30 +376,30 @@ if (
     shape: "arrowUp",
 
     text:
-      streakRef.current >= 13
+      streakRef.current >= 14
         ? "9B"
-        : streakRef.current >= 12
+        : streakRef.current >= 13
         ? "8S"
-        : streakRef.current >= 11
+        : streakRef.current >= 12
         ? "7B"
-        : streakRef.current >= 10
+        : streakRef.current >= 11
         ? "6B"
-        : streakRef.current >= 9
+        : streakRef.current >= 10
         ? "5B"
-        : streakRef.current >= 8
+        : streakRef.current >= 9
         ? "4B"
-        : streakRef.current >= 7
+        : streakRef.current >= 8
         ? "3B"
-        : streakRef.current >= 6
+        : streakRef.current >= 7
         ? "2B"
         : "1B",
   });
 }
 
-// 🔴 BIG streak >= 5
+// 🔴 BIG streak >= 6
 if (
   signal === "BIG" &&
-  streakRef.current >= 5
+  streakRef.current >= 6
 ) {
   markersRef.current.push({
   time: candle.time,
@@ -411,21 +411,21 @@ if (
     shape: "arrowDown",
 
     text:
-      streakRef.current >= 13
+      streakRef.current >= 14
         ? "9S"
-        : streakRef.current >= 12
+        : streakRef.current >= 13
         ? "8S"
-        : streakRef.current >= 11
+        : streakRef.current >= 12
         ? "7S"
-        : streakRef.current >= 10
+        : streakRef.current >= 11
         ? "6S"
-        : streakRef.current >= 9
+        : streakRef.current >= 10
         ? "5S"
-        : streakRef.current >= 8
+        : streakRef.current >= 9
         ? "4S"
-        : streakRef.current >= 7
+        : streakRef.current >= 8
         ? "3S"
-        : streakRef.current >= 6
+        : streakRef.current >= 7
         ? "2S"
         : "1S",
   });
