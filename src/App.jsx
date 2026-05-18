@@ -251,6 +251,7 @@ async function loadBlock(block) {
 // 🔥 PAUSE MODE
 if (pauseRef.current > 0) {
   pauseRef.current -= 1;
+  return;
 
 } else {
 
@@ -311,8 +312,9 @@ if (pauseRef.current > 0) {
       // 🔥 RESET
       loseCountRef.current = 1;
 
-      // 🔥 PAUSE 5 CANDLES
-      pauseRef.current = 5;
+      // 🔥 PAUSE RANDOM CANDLES
+      pauseRef.current = 
+      Math.floor(Math.random()*5)+3;
 
       // 🔥 CLEAR CURRENT SIDE
       predictSideRef.current = null;
