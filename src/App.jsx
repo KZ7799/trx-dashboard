@@ -371,7 +371,7 @@ if (
   markersRef.current.push({
   time: candle.time,
 
-    position: "belowBar",
+    position: "aboveBar",
 
     color: "#00ff99",
 
@@ -406,7 +406,7 @@ if (
   markersRef.current.push({
   time: candle.time,
 
-    position: "aboveBar",
+    position: "belowBar",
 
     color: "#ff3333",
 
