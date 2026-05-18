@@ -18,6 +18,9 @@ export default function App() {
   const markersRef = useRef([]);
   const activeArrowRef = useRef(null);
   const markerPrimitiveRef = useRef(null);
+  const predictSideRef = useRef(null);
+  const loseCountRef = useRef(1);
+  const pauseRef = useRef(0);
 
   // 🔥 streak refs
   const lastSignalRef = useRef(null);
@@ -241,14 +244,130 @@ async function loadBlock(block) {
 
     console.log(markersRef.current);
 
+    // ==================================================
+// 🔥 B/S TRACKING SYSTEM
+// ==================================================
+
+// 🔥 PAUSE MODE
+if (pauseRef.current > 0) {
+  pauseRef.current -= 1;
+
+} else {
+
+  // first signal
+  if (!predictSideRef.current) {
+
+    predictSideRef.current = signal;
+
+    loseCountRef.current = 1;
+
+    markersRef.current.push({
+      time: candle.time,
+
+      position:
+        signal === "BIG"
+          ? "aboveBar"
+          : "belowBar",
+
+      color:
+        signal === "BIG"
+          ? "#00ff99"
+          : "#ff3333",
+
+      shape:
+        signal === "BIG"
+          ? "arrowDown"
+          : "arrowUp",
+
+      text:
+        signal === "BIG"
+          ? "B"
+          : "S",
+    });
+
+  } else {
+
+    // ✅ WIN
+    if (
+      signal ===
+      predictSideRef.current
+    ) {
+
+      markersRef.current.push({
+        time: candle.time,
+
+        position:
+          signal === "BIG"
+            ? "aboveBar"
+            : "belowBar",
+
+        color: "#ffff00",
+
+        shape:
+          signal === "BIG"
+            ? "arrowDown"
+            : "arrowUp",
+
+        text: "W",
+      });
+
+      // 🔥 RESET
+      loseCountRef.current = 1;
+
+      // 🔥 PAUSE 5 CANDLES
+      pauseRef.current = 5;
+
+      // 🔥 CLEAR CURRENT SIDE
+      predictSideRef.current = null;
+
+    } else {
+
+      // ❌ LOSE
+      loseCountRef.current += 1;
+
+      markersRef.current.push({
+        time: candle.time,
+
+        position:
+          predictSideRef.current ===
+          "BIG"
+            ? "aboveBar"
+            : "belowBar",
+
+        color:
+          predictSideRef.current ===
+          "BIG"
+            ? "#00ff99"
+            : "#ff3333",
+
+        shape:
+          predictSideRef.current ===
+          "BIG"
+            ? "arrowDown"
+            : "arrowUp",
+
+        text:
+          `${loseCountRef.current}${
+            predictSideRef.current ===
+            "BIG"
+              ? "B"
+              : "S"
+          }`,
+      });
+
+      // keep tracking same side
+    }
+  }
+}
+
 // ==================================================
 // 🔥 SMART SIGNAL ARROW SYSTEM
 // ==================================================
 
-// 🟢 SMALL streak >= 4
+// 🟢 SMALL streak >= 5
 if (
   signal === "SMALL" &&
-  streakRef.current >= 4
+  streakRef.current >= 5
 ) {
   markersRef.current.push({
   time: candle.time,
@@ -260,30 +379,30 @@ if (
     shape: "arrowUp",
 
     text:
-      streakRef.current >= 12
+      streakRef.current >= 13
         ? "9B"
-        : streakRef.current >= 11
+        : streakRef.current >= 12
         ? "8S"
-        : streakRef.current >= 10
+        : streakRef.current >= 11
         ? "7B"
+        : streakRef.current >= 10
+        ? "6B"
         : streakRef.current >= 9
-        ? "6S"
+        ? "5B"
         : streakRef.current >= 8
-        ? "5S"
+        ? "4B"
         : streakRef.current >= 7
-        ? "4S"
-        : streakRef.current >= 6
         ? "3B"
-        : streakRef.current >= 5
+        : streakRef.current >= 6
         ? "2B"
         : "1B",
   });
 }
 
-// 🔴 BIG streak >= 4
+// 🔴 BIG streak >= 5
 if (
   signal === "BIG" &&
-  streakRef.current >= 4
+  streakRef.current >= 5
 ) {
   markersRef.current.push({
   time: candle.time,
@@ -295,21 +414,21 @@ if (
     shape: "arrowDown",
 
     text:
-      streakRef.current >= 12
+      streakRef.current >= 13
         ? "9S"
-        : streakRef.current >= 11
+        : streakRef.current >= 12
         ? "8S"
-        : streakRef.current >= 10
+        : streakRef.current >= 11
         ? "7S"
-        : streakRef.current >= 9
+        : streakRef.current >= 10
         ? "6S"
-        : streakRef.current >= 8
+        : streakRef.current >= 9
         ? "5S"
-        : streakRef.current >= 7
+        : streakRef.current >= 8
         ? "4S"
-        : streakRef.current >= 6
+        : streakRef.current >= 7
         ? "3S"
-        : streakRef.current >= 5
+        : streakRef.current >= 6
         ? "2S"
         : "1S",
   });
