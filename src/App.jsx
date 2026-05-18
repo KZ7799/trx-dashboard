@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  createChart,
-  CandlestickSeries,
-} from "lightweight-charts";
+import { createChart } from "lightweight-charts";
 
 export default function App() {
+  const API =
+    "https://trx-dashboard-production.up.railway.app/signal";
+
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
@@ -14,6 +14,11 @@ export default function App() {
   const lastClose = useRef(5);
   const currentBlock = useRef(0);
 
+  // 🔥 marker refs
+  const markersRef = useRef([]);
+  const activeArrowRef = useRef(null);
+  const markerPrimitiveRef = useRef(null);
+
   // 🔥 streak refs
   const lastSignalRef = useRef(null);
   const streakRef = useRef(0);
@@ -21,33 +26,47 @@ export default function App() {
   // 🔥 history refs
   const historyRef = useRef([]);
 
-  const [startBlock, setStartBlock] = useState(82741360);
+  const [startBlock, setStartBlock] =
+    useState(82741360);
 
   const [hover, setHover] = useState("-");
   const [latest, setLatest] = useState("-");
-  const [status, setStatus] = useState("STOPPED");
+  const [status, setStatus] =
+    useState("STOPPED");
 
-  const [liveSignal, setLiveSignal] = useState("-");
+  const [liveSignal, setLiveSignal] =
+    useState("-");
+
   const [streak, setStreak] = useState(0);
 
   // 🔥 prediction %
-  const [bigPercent, setBigPercent] = useState(50);
-  const [smallPercent, setSmallPercent] = useState(50);
+  const [bigPercent, setBigPercent] =
+    useState(50);
+
+  const [smallPercent, setSmallPercent] =
+    useState(50);
 
   // 🔥 timer
   const [timer, setTimer] = useState(60);
 
   // 🔥 trend
-  const [trend, setTrend] = useState("SIDEWAYS");
+  const [trend, setTrend] =
+    useState("SIDEWAYS");
 
   // 🔥 history text
   const [historyText, setHistoryText] =
     useState([]);
 
   function getDigit(hash) {
-    for (let i = hash.length - 1; i >= 0; i--) {
-      if (!isNaN(hash[i])) return Number(hash[i]);
+    for (
+      let i = hash.length - 1;
+      i >= 0;
+      i--
+    ) {
+      if (!isNaN(hash[i]))
+        return Number(hash[i]);
     }
+
     return 0;
   }
 
@@ -66,31 +85,51 @@ export default function App() {
     }
   }
 
-  async function loadBlock(block) {
-    if (loaded.current.has(block)) return;
+// 🔥 API SIGNAL
+async function getSignal() {
+  try {
+    const res = await fetch(API);
 
-    const res = await fetch(
-      "https://api.trongrid.io/wallet/getblockbynum",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          num: block,
-        }),
-      }
-    );
+    const data = await res.json();
 
-    const json = await res.json();
+    // RESULT ONLY
+    setLiveSignal(signal);
 
-    if (!json.blockID) return;
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+async function loadBlock(block) {
+
+  if (loaded.current.has(block)) return;
+
+  setLatest(String(block));
+
+  const res = await fetch(
+    "https://api.trongrid.io/wallet/getblockbynum",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        num: block,
+      }),
+    }
+  );
+
+  const json = await res.json();
+
+  if (!json.blockID) return;
 
     const digit = getDigit(json.blockID);
 
     const big = digit >= 5;
 
-    const signal = big ? "BIG" : "SMALL";
+    const signal = big
+      ? "BIG"
+      : "SMALL";
 
     // 🔥 RESULT TEXT
     setLiveSignal(signal);
@@ -99,7 +138,9 @@ export default function App() {
     setTimer(60);
 
     // 🔥 STREAK
-    if (lastSignalRef.current === signal) {
+    if (
+      lastSignalRef.current === signal
+    ) {
       streakRef.current += 1;
     } else {
       streakRef.current = 1;
@@ -114,20 +155,23 @@ export default function App() {
       signal,
     ];
 
-    historyRef.current = updatedHistory;
+    historyRef.current =
+      updatedHistory;
 
-    // latest 14 only
-    const latest14 =
-      updatedHistory.slice(-14);
+    // latest 20 only
+    const latest20 =
+      updatedHistory.slice(-20);
 
     setHistoryText(
-      latest14.map((x) =>
+      latest20.map((x) =>
         x === "BIG" ? "B" : "S"
       )
     );
 
     // keep last 20 results
-    if (historyRef.current.length > 20) {
+    if (
+      historyRef.current.length > 20
+    ) {
       historyRef.current.shift();
     }
 
@@ -151,6 +195,7 @@ export default function App() {
     const smallP = 100 - bigP;
 
     setBigPercent(bigP);
+
     setSmallPercent(smallP);
 
     // 🔥 TREND DETECTOR
@@ -191,11 +236,93 @@ export default function App() {
       close,
     };
 
+    // 🔥 UPDATE CHART
     seriesRef.current.update(candle);
+
+    console.log(markersRef.current);
+
+// ==================================================
+// 🔥 SMART SIGNAL ARROW SYSTEM
+// ==================================================
+
+// 🟢 SMALL streak >= 4
+if (
+  signal === "SMALL" &&
+  streakRef.current >= 4
+) {
+  markersRef.current.push({
+  time: candle.time,
+
+    position: "belowBar",
+
+    color: "#00ff99",
+
+    shape: "arrowUp",
+
+    text:
+      streakRef.current >= 12
+        ? "9B"
+        : streakRef.current >= 11
+        ? "8S"
+        : streakRef.current >= 10
+        ? "7B"
+        : streakRef.current >= 9
+        ? "6S"
+        : streakRef.current >= 8
+        ? "5S"
+        : streakRef.current >= 7
+        ? "4S"
+        : streakRef.current >= 6
+        ? "3B"
+        : streakRef.current >= 5
+        ? "2B"
+        : "1B",
+  });
+}
+
+// 🔴 BIG streak >= 4
+if (
+  signal === "BIG" &&
+  streakRef.current >= 4
+) {
+  markersRef.current.push({
+  time: candle.time,
+
+    position: "aboveBar",
+
+    color: "#ff3333",
+
+    shape: "arrowDown",
+
+    text:
+      streakRef.current >= 12
+        ? "9S"
+        : streakRef.current >= 11
+        ? "8S"
+        : streakRef.current >= 10
+        ? "7S"
+        : streakRef.current >= 9
+        ? "6S"
+        : streakRef.current >= 8
+        ? "5S"
+        : streakRef.current >= 7
+        ? "4S"
+        : streakRef.current >= 6
+        ? "3S"
+        : streakRef.current >= 5
+        ? "2S"
+        : "1S",
+  });
+}
+
+seriesRef.current.setMarkers(
+  markersRef.current
+);
+
+// ==================================================
 
     loaded.current.add(block);
 
-    setLatest(String(block));
   }
 
   async function start() {
@@ -209,17 +336,27 @@ export default function App() {
 
     lastClose.current = 5;
 
+    markersRef.current = [];
+
+    activeArrowRef.current = null;
+
     // reset
     lastSignalRef.current = null;
+
     streakRef.current = 0;
+
     historyRef.current = [];
 
     setHover("-");
+
     setLatest("-");
+
     setLiveSignal("-");
+
     setStreak(0);
 
     setBigPercent(50);
+
     setSmallPercent(50);
 
     setTimer(60);
@@ -230,12 +367,14 @@ export default function App() {
 
     seriesRef.current.setData([]);
 
-    const latestBlock = await getLatest();
+    const latestBlock =
+      await getLatest();
 
     let block = Number(startBlock);
 
     while (block <= latestBlock) {
       await loadBlock(block);
+
       block += 20;
     }
 
@@ -243,15 +382,24 @@ export default function App() {
 
     setStatus("LIVE");
 
-    liveRef.current = setInterval(async () => {
-      const latestNow = await getLatest();
+    liveRef.current = setInterval(
+      async () => {
+        const latestNow =
+          await getLatest();
 
-      if (currentBlock.current <= latestNow) {
-        await loadBlock(currentBlock.current);
+        if (
+          currentBlock.current <=
+          latestNow
+        ) {
+          await loadBlock(
+            currentBlock.current
+          );
 
-        currentBlock.current += 20;
-      }
-    }, 3000);
+          currentBlock.current += 20;
+        }
+      },
+      3000
+    );
   }
 
   // 🔥 TIMER LOOP
@@ -259,9 +407,21 @@ export default function App() {
     const t = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) return 0;
+
         return prev - 1;
       });
     }, 1000);
+
+    return () => clearInterval(t);
+  }, []);
+
+  // 🔥 API AUTO UPDATE
+  useEffect(() => {
+    getSignal();
+
+    const t = setInterval(() => {
+      getSignal();
+    }, 3000);
 
     return () => clearInterval(t);
   }, []);
@@ -270,13 +430,16 @@ export default function App() {
     const chart = createChart(
       containerRef.current,
       {
-        width: window.innerWidth - 40,
+        width:
+          window.innerWidth - 40,
+
         height: 650,
 
         layout: {
           background: {
             color: "#111",
           },
+
           textColor: "#fff",
         },
 
@@ -284,6 +447,7 @@ export default function App() {
           vertLines: {
             color: "#222",
           },
+
           horzLines: {
             color: "#222",
           },
@@ -297,29 +461,31 @@ export default function App() {
 
     chartRef.current = chart;
 
-    const series = chart.addSeries(
-      CandlestickSeries,
-      {
-        upColor: "#00ff99",
-        downColor: "#ff3333",
-        borderVisible: false,
-      }
-    );
+    const series = chart.addCandlestickSeries({
+  upColor: "#00ff99",
+  downColor: "#ff3333",
+  borderVisible: false,
+});
 
     seriesRef.current = series;
 
-    chart.subscribeCrosshairMove((p) => {
-      if (!p?.time) {
-        setHover("-");
-        return;
-      }
+    chart.subscribeCrosshairMove(
+      (p) => {
+        if (!p?.time) {
+          setHover("-");
 
-      setHover(String(p.time));
-    });
+          return;
+        }
+
+        setHover(String(p.time));
+      }
+    );
 
     return () => {
       if (liveRef.current) {
-        clearInterval(liveRef.current);
+        clearInterval(
+          liveRef.current
+        );
       }
 
       chart.remove();
@@ -330,7 +496,9 @@ export default function App() {
     <div
       style={{
         background: "#111",
+
         minHeight: "100vh",
+
         padding: 20,
       }}
     >
@@ -338,26 +506,37 @@ export default function App() {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+
+          justifyContent:
+            "space-between",
+
           color: "#fff",
+
           marginBottom: 10,
         }}
       >
         <h2 style={{ margin: 0 }}>
-          TRON Big/Small Chart
+          TRX Win Big/Small Chart
         </h2>
 
         <div
           style={{
             display: "flex",
+
             gap: 20,
           }}
         >
-          <span>Hover: {hover}</span>
+          <span>
+            Hover: {hover}
+          </span>
 
-          <span>Latest: {latest}</span>
+          <span>
+            Latest: {latest}
+          </span>
 
-          <span>Status: {status}</span>
+          <span>
+            Status: {status}
+          </span>
         </div>
       </div>
 
@@ -365,8 +544,12 @@ export default function App() {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+
+          justifyContent:
+            "space-between",
+
           alignItems: "center",
+
           marginBottom: 15,
         }}
       >
@@ -375,10 +558,13 @@ export default function App() {
           <input
             value={startBlock}
             onChange={(e) =>
-              setStartBlock(e.target.value)
+              setStartBlock(
+                e.target.value
+              )
             }
             style={{
               padding: 10,
+
               marginRight: 10,
             }}
           />
@@ -397,7 +583,9 @@ export default function App() {
         <div
           style={{
             display: "flex",
+
             alignItems: "center",
+
             gap: 20,
           }}
         >
@@ -405,26 +593,34 @@ export default function App() {
           <div
             style={{
               display: "flex",
+
               gap: 8,
+
               alignItems: "center",
+
               flexWrap: "wrap",
             }}
           >
-            {historyText.map((x, i) => (
-              <span
-                key={i}
-                style={{
-                  fontSize: 22,
-                  fontWeight: "bold",
-                  color:
-                    x === "B"
-                      ? "#00ff99"
-                      : "#ff3333",
-                }}
-              >
-                {x}
-              </span>
-            ))}
+            {historyText.map(
+              (x, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 22,
+
+                    fontWeight:
+                      "bold",
+
+                    color:
+                      x === "B"
+                        ? "#00ff99"
+                        : "#ff3333",
+                  }}
+                >
+                  {x}
+                </span>
+              )
+            )}
           </div>
 
           <div
@@ -435,12 +631,17 @@ export default function App() {
             <div
               style={{
                 fontSize: 32,
+
                 fontWeight: "bold",
+
                 letterSpacing: 2,
+
                 color:
-                  liveSignal === "BIG"
+                  liveSignal ===
+                  "BIG"
                     ? "#00ff99"
-                    : liveSignal === "SMALL"
+                    : liveSignal ===
+                      "SMALL"
                     ? "#ff3333"
                     : "#888",
               }}
@@ -452,24 +653,45 @@ export default function App() {
             <div
               style={{
                 marginTop: 8,
+
                 display: "flex",
+
                 gap: 20,
-                justifyContent: "flex-end",
+
+                justifyContent:
+                  "flex-end",
+
                 fontSize: 16,
+
                 fontWeight: "bold",
-                alignItems: "center",
+
+                alignItems:
+                  "center",
               }}
             >
-              <span style={{ color: "#fff" }}>
+              <span
+                style={{
+                  color: "#fff",
+                }}
+              >
                 Streak: {streak}
               </span>
 
-              <span style={{ color: "#00ff99" }}>
+              <span
+                style={{
+                  color: "#00ff99",
+                }}
+              >
                 BIG %: {bigPercent}%
               </span>
 
-              <span style={{ color: "#ff3333" }}>
-                SMALL %: {smallPercent}%
+              <span
+                style={{
+                  color: "#ff3333",
+                }}
+              >
+                SMALL %:{" "}
+                {smallPercent}%
               </span>
 
               <span
@@ -487,9 +709,11 @@ export default function App() {
               <span
                 style={{
                   color:
-                    trend === "UP TREND"
+                    trend ===
+                    "UP TREND"
                       ? "#00ff99"
-                      : trend === "DOWN TREND"
+                      : trend ===
+                        "DOWN TREND"
                       ? "#ff3333"
                       : "#999",
                 }}
@@ -506,6 +730,7 @@ export default function App() {
         ref={containerRef}
         style={{
           width: "100%",
+
           height: 650,
         }}
       />
