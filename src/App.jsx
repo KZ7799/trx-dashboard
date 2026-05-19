@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart } from "lightweight-charts";
+import { use } from "react";
 
 export default function App() {
   const API =
@@ -16,8 +17,6 @@ export default function App() {
 
   // 🔥 marker refs
   const markersRef = useRef([]);
-  const activeArrowRef = useRef(null);
-  const markerPrimitiveRef = useRef(null);
   const predictSideRef = useRef(null);
   const loseCountRef = useRef(1);
   const pauseRef = useRef(0);
@@ -59,6 +58,24 @@ export default function App() {
   // 🔥 history text
   const [historyText, setHistoryText] =
     useState([]);
+
+  const pendingPredictionRef =
+    useRef("WAIT");
+
+  const [prediction, setPrediction] =
+    useState("WAIT");
+
+  const [winCount, setWinCount] =
+    useState(0);
+
+  const [loseCount, setLoseCount] =
+    useState(0);
+ 
+  const [signalWin, setSignalWin] =
+    useState(0);
+
+  const [signalLose, setSignalLose] =
+    useState(0);
 
   function getDigit(hash) {
     for (
@@ -105,9 +122,10 @@ async function getSignal() {
 
 async function loadBlock(block) {
 
-  if (loaded.current.has(block)) return;
+  try {
 
-  setLatest(String(block));
+   if (loaded.current.has(block))
+     return false;
 
   const res = await fetch(
     "https://api.trongrid.io/wallet/getblockbynum",
@@ -124,7 +142,9 @@ async function loadBlock(block) {
 
   const json = await res.json();
 
-  if (!json.blockID) return;
+  if (!json.blockID) return false;
+
+  setLatest(String(block));
 
     const digit = getDigit(json.blockID);
 
@@ -133,11 +153,7 @@ async function loadBlock(block) {
     const signal = big
       ? "BIG"
       : "SMALL";
-
-    // previous signal
-    const prevSignal =
-     lastSignalRef.current;
-
+  
     // 🔥 RESULT TEXT
     setLiveSignal(signal);
 
@@ -227,6 +243,33 @@ async function loadBlock(block) {
       setTrend("SIDEWAYS");
     }
 
+// ==================================================
+// 🔥 PREDICTION SYSTEM
+// ==================================================
+
+let nextPrediction = "WAIT";
+
+if (trend === "SIDEWAYS") {
+
+  // latest SMALL + small%=50
+  if (
+    signal === "SMALL" &&
+    smallP === 50
+  ) {
+    nextPrediction = "SMALL";
+  }
+
+  // latest BIG + small%=60
+  else if (
+    signal === "BIG" &&
+    smallP === 60
+  ) {
+    nextPrediction = "BIG";
+  }
+}
+
+setPrediction(nextPrediction);
+
     const open = lastClose.current;
 
     const close = big
@@ -243,10 +286,37 @@ async function loadBlock(block) {
       close,
     };
 
-    // 🔥 UPDATE CHART
+// 🔥 UPDATE CHART
     seriesRef.current.update(candle);
 
-    console.log(markersRef.current);
+// ==================================================
+// 🔥 CHECK PREVIOUS PREDICTION
+// ==================================================
+
+if (
+  pendingPredictionRef.current !==
+  "WAIT"
+) {
+
+  if (
+    pendingPredictionRef.current ===
+    signal
+  ) {
+
+    setSignalWin(prev => prev + 1);
+
+  } else {
+
+    setSignalLose(prev => prev + 1);
+
+  }
+
+}
+
+setPrediction(nextPrediction);
+
+pendingPredictionRef.current =
+  nextPrediction;
 
 // ==================================================
 // 🔥 B/S TRACKING SYSTEM
@@ -412,11 +482,22 @@ seriesRef.current.setMarkers(
   markersRef.current
 );
 
-// ==================================================
+// 🔥 ALL YOUR EXISTING CODE
 
-    loaded.current.add(block);
+  loaded.current.add(block);
 
+  return true;
+
+} catch (e) {
+
+  console.log("BLOCK ERROR", e);
+
+  return false;
   }
+
+}
+
+// ==================================================
 
   async function start() {
     setStatus("LOADING");
@@ -431,9 +512,7 @@ seriesRef.current.setMarkers(
 
     markersRef.current = [];
 
-    activeArrowRef.current = null;
-
-    // reset
+// reset
     lastSignalRef.current = null;
 
     streakRef.current = 0;
@@ -460,10 +539,16 @@ seriesRef.current.setMarkers(
 
     seriesRef.current.setData([]);
 
+    pendingPredictionRef.current =
+      "WAIT";
+
     const latestBlock =
       await getLatest();
 
-    let block = Number(startBlock);
+    let block =
+       startBlock === ""
+        ? latestBlock - 1000
+        : Number(startBlock);
 
     while (block <= latestBlock) {
       await loadBlock(block);
@@ -484,11 +569,13 @@ seriesRef.current.setMarkers(
           currentBlock.current <=
           latestNow
         ) {
-          await loadBlock(
+        const ok = await loadBlock(
             currentBlock.current
           );
 
-          currentBlock.current += 20;
+          if (ok) {
+            currentBlock.current += 20;
+          }
         }
       },
       3000
@@ -671,6 +758,56 @@ seriesRef.current.setMarkers(
             Start
           </button>
         </div>
+
+        <div style={{ marginTop: 20,
+           color: "#fff" }}>
+  
+      <div>
+      
+        <span style={{
+          fontSize: 25,
+
+          fontWeight: "bold",
+
+          letterSpacing: 2,
+         color:
+         prediction === "BIG"
+          ? "#00ff99"
+          : prediction === "SMALL"
+          ? "#ff3333"
+          : "#aaa"
+       }}>
+       Prediction: {prediction}
+       </span>
+      </div>
+
+      <div style={{
+       wordSpacing: "10px",
+
+       marginTop: 8,
+
+       display: "flex",
+
+       gap: 20,
+
+       justifyContent: "center",
+
+      }}>
+      
+       <span style={{
+        color: "#00ff99"
+       }}>
+        Win: {signalWin}
+       </span>
+     
+       <span style={{
+        color: "#ff3333"
+       }}>
+        Lose: {signalLose}
+       </span>
+     </div>
+
+    </div>
 
         {/* RIGHT PANEL */}
         <div
