@@ -30,7 +30,7 @@ export default function App() {
   const historyRef = useRef([]);
 
   const [startBlock, setStartBlock] =
-    useState(82741360);
+    useState("");
 
   const [hover, setHover] = useState("-");
   const [latest, setLatest] = useState("-");
@@ -133,6 +133,10 @@ async function loadBlock(block) {
     const signal = big
       ? "BIG"
       : "SMALL";
+
+    // previous signal
+    const prevSignal =
+     lastSignalRef.current;
 
     // 🔥 RESULT TEXT
     setLiveSignal(signal);
@@ -244,14 +248,13 @@ async function loadBlock(block) {
 
     console.log(markersRef.current);
 
-    // ==================================================
+// ==================================================
 // 🔥 B/S TRACKING SYSTEM
 // ==================================================
 
 // 🔥 PAUSE MODE
 if (pauseRef.current > 0) {
   pauseRef.current -= 1;
-  return;
 
 } else {
 
@@ -360,16 +363,19 @@ if (pauseRef.current > 0) {
 }
 
 // ==================================================
-// 🔥 SMART SIGNAL ARROW SYSTEM
+// 🔥 CONTRARIAN STREAK SIGNAL
 // ==================================================
 
-// 🟢 SMALL streak >= 6
+// 🟢 SMALL streak -> predict BIG
 if (
   signal === "SMALL" &&
   streakRef.current >= 6
 ) {
+  const count =
+    streakRef.current - 5;
+
   markersRef.current.push({
-  time: candle.time,
+    time: candle.time,
 
     position: "aboveBar",
 
@@ -377,34 +383,20 @@ if (
 
     shape: "arrowUp",
 
-    text:
-      streakRef.current >= 14
-        ? "9B"
-        : streakRef.current >= 13
-        ? "8S"
-        : streakRef.current >= 12
-        ? "7B"
-        : streakRef.current >= 11
-        ? "6B"
-        : streakRef.current >= 10
-        ? "5B"
-        : streakRef.current >= 9
-        ? "4B"
-        : streakRef.current >= 8
-        ? "3B"
-        : streakRef.current >= 7
-        ? "2B"
-        : "1B",
+    text: `${count}B`,
   });
 }
 
-// 🔴 BIG streak >= 6
+// 🔴 BIG streak -> predict SMALL
 if (
   signal === "BIG" &&
   streakRef.current >= 6
 ) {
+  const count =
+    streakRef.current - 5;
+
   markersRef.current.push({
-  time: candle.time,
+    time: candle.time,
 
     position: "belowBar",
 
@@ -412,24 +404,7 @@ if (
 
     shape: "arrowDown",
 
-    text:
-      streakRef.current >= 14
-        ? "9S"
-        : streakRef.current >= 13
-        ? "8S"
-        : streakRef.current >= 12
-        ? "7S"
-        : streakRef.current >= 11
-        ? "6S"
-        : streakRef.current >= 10
-        ? "5S"
-        : streakRef.current >= 9
-        ? "4S"
-        : streakRef.current >= 8
-        ? "3S"
-        : streakRef.current >= 7
-        ? "2S"
-        : "1S",
+    text: `${count}S`,
   });
 }
 
