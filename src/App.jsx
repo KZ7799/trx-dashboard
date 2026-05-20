@@ -77,6 +77,12 @@ export default function App() {
   const [signalLose, setSignalLose] =
     useState(0);
 
+  const [aiSignal, setAiSignal] =
+    useState("WAIT");
+
+  const [aiConfidence, setAiConfidence] =
+    useState(0);
+
   function getDigit(hash) {
     for (
       let i = hash.length - 1;
@@ -489,6 +495,132 @@ seriesRef.current.setMarkers(
   markersRef.current
 );
 
+// ==================================================
+// 🔥 AI SIGNAL SYSTEM
+// ==================================================
+
+if (historyRef.current.length >= 20) {
+
+  let bigScore = 0;
+  let smallScore = 0;
+
+  // 🔥 TREND
+  if (trend === "UP TREND") {
+    bigScore += 2;
+  }
+
+  if (trend === "DOWN TREND") {
+    smallScore += 2;
+  }
+
+  // 🔥 PERCENT
+  if (bigPercent >= 60) {
+    bigScore += 1;
+  }
+
+  if (smallPercent >= 60) {
+    smallScore += 1;
+  }
+
+  // 🔥 STREAK REVERSAL
+  if (
+    signal === "BIG" &&
+    streakRef.current >= 4
+  ) {
+    smallScore += 2;
+  }
+
+  if (
+    signal === "SMALL" &&
+    streakRef.current >= 4
+  ) {
+    bigScore += 2;
+  }
+
+  // 🔥 LAST 3 PATTERN
+  const last3 =
+    historyRef.current.slice(-3);
+
+  const pattern =
+    last3.join("-");
+
+  if (pattern === "BIG-BIG-BIG") {
+    smallScore += 1;
+  }
+
+  if (
+    pattern ===
+    "SMALL-SMALL-SMALL"
+  ) {
+    bigScore += 1;
+  }
+
+  // ==================================================
+  // FINAL AI RESULT
+  // ==================================================
+
+  const totalScore =
+    bigScore + smallScore;
+
+  if (bigScore > smallScore) {
+
+    setAiSignal("BIG");
+
+    setAiConfidence(
+      Math.round(
+        (bigScore / totalScore) * 100
+      )
+    );
+
+    markersRef.current.push({
+  time: candle.time,
+
+  position: "belowBar",
+
+  color: "#00ccff",
+
+  shape: "arrowUp",
+
+  text: `AI B ${Math.round(
+    (bigScore / totalScore) * 100
+  )}%`,
+});
+
+  } else if (
+    smallScore > bigScore
+  ) {
+
+    setAiSignal("SMALL");
+
+    setAiConfidence(
+      Math.round(
+        (smallScore / totalScore) * 100
+      )
+    );
+
+    markersRef.current.push({
+  time: candle.time,
+
+  position: "aboveBar",
+
+  color: "#ff00aa",
+
+  shape: "arrowDown",
+
+  text: `AI S ${Math.round(
+    (smallScore / totalScore) * 100
+  )}%`,
+});
+
+  } else {
+
+    setAiSignal("WAIT");
+
+    setAiConfidence(50);
+
+  }
+}
+
 // 🔥 ALL YOUR EXISTING CODE
 
   loaded.current.add(block);
@@ -763,55 +895,37 @@ seriesRef.current.setMarkers(
           </button>
         </div>
 
-        <div style={{ marginTop: 20,
-           color: "#fff" }}>
-  
-      <div>
-      
-        <span style={{
-          fontSize: 25,
-
-          fontWeight: "bold",
-
-          letterSpacing: 2,
-         color:
-         prediction === "BIG"
+        <div
+  style={{
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: "bold",
+    lineHeight: 1.8,
+  }}
+>
+  <div
+    style={{
+      color:
+        aiSignal === "BIG"
           ? "#00ff99"
-          : prediction === "SMALL"
+          : aiSignal === "SMALL"
           ? "#ff3333"
-          : "#aaa"
-       }}>
-       Signal: {prediction}
-       </span>
-      </div>
+          : "#999",
+    }}
+  >
+    AI Signal: {aiSignal}
+  </div>
 
-      <div style={{
-       wordSpacing: "10px",
+  <div style={{ color: "#ffaa00" }}>
+    Confidence: {aiConfidence}%
+  </div>
 
-       marginTop: 8,
-
-       display: "flex",
-
-       gap: 20,
-
-       justifyContent: "center",
-
-      }}>
-      
-       <span style={{
-        color: "#00ff99"
-       }}>
-        Win: {signalWin}
-       </span>
-     
-       <span style={{
-        color: "#ff3333"
-       }}>
-        Lose: {signalLose}
-       </span>
-      </div>
-
-    </div>
+  <div style={{ color: "#fff" }}>
+    Win: {signalWin}
+    {" / "}
+    Lose: {signalLose}
+  </div>
+</div>
 
         {/* RIGHT PANEL */}
         <div
