@@ -805,7 +805,7 @@ seriesRef.current.setMarkers(
        }}>
         Lose: {signalLose}
        </span>
-     </div>
+      </div>
 
     </div>
 
@@ -824,10 +824,12 @@ seriesRef.current.setMarkers(
             style={{
               display: "flex",
 
-              gap: 8,
+              gap: 5,
 
               alignItems: "center",
-
+              
+              justifyContent: "flex-start",
+             
               flexWrap: "wrap",
             }}
           >
@@ -836,7 +838,7 @@ seriesRef.current.setMarkers(
                 <span
                   key={i}
                   style={{
-                    fontSize: 22,
+                    fontSize: 18,
 
                     fontWeight:
                       "bold",
@@ -856,6 +858,7 @@ seriesRef.current.setMarkers(
           <div
             style={{
               textAlign: "right",
+              gap: 20,
             }}
           >
             <div
