@@ -181,6 +181,9 @@ async function loadBlock(block) {
     historyRef.current =
       updatedHistory;
 
+    const candleCount =
+      historyRef.current.length
+
     // latest 20 only
     const latest20 =
       updatedHistory.slice(-20);
@@ -249,7 +252,9 @@ async function loadBlock(block) {
 
 let nextPrediction = "WAIT";
 
-if (trend === "SIDEWAYS") {
+if (candleCount >= 20) {
+
+  if (trend === "SIDEWAYS") {
 
   // latest SMALL + small%=50
   if (
@@ -266,6 +271,8 @@ if (trend === "SIDEWAYS") {
   ) {
     nextPrediction = "BIG";
   }
+ }
+
 }
 
 setPrediction(nextPrediction);
@@ -545,10 +552,7 @@ seriesRef.current.setMarkers(
     const latestBlock =
       await getLatest();
 
-    let block =
-       startBlock === ""
-        ? latestBlock - 1000
-        : Number(startBlock);
+    let block = Number(startBlock);
 
     while (block <= latestBlock) {
       await loadBlock(block);
@@ -777,7 +781,7 @@ seriesRef.current.setMarkers(
           ? "#ff3333"
           : "#aaa"
        }}>
-       Prediction: {prediction}
+       Signal: {prediction}
        </span>
       </div>
 
