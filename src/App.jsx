@@ -824,12 +824,10 @@ seriesRef.current.setMarkers(
             style={{
               display: "flex",
 
-              gap: 5,
+              gap: 3,
 
               alignItems: "center",
-              
-              justifyContent: "flex-start",
-             
+                         
               flexWrap: "wrap",
             }}
           >
@@ -838,7 +836,7 @@ seriesRef.current.setMarkers(
                 <span
                   key={i}
                   style={{
-                    fontSize: 18,
+                    fontSize: 16,
 
                     fontWeight:
                       "bold",
