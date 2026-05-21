@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart } from "lightweight-charts";
-import { use } from "react";
 
 export default function App() {
   const API =
@@ -17,6 +16,8 @@ export default function App() {
 
   // 🔥 marker refs
   const markersRef = useRef([]);
+  const activeArrowRef = useRef(null);
+  const markerPrimitiveRef = useRef(null);
   const predictSideRef = useRef(null);
   const loseCountRef = useRef(1);
   const pauseRef = useRef(0);
@@ -58,30 +59,6 @@ export default function App() {
   // 🔥 history text
   const [historyText, setHistoryText] =
     useState([]);
-
-  const pendingPredictionRef =
-    useRef("WAIT");
-
-  const [prediction, setPrediction] =
-    useState("WAIT");
-
-  const [winCount, setWinCount] =
-    useState(0);
-
-  const [loseCount, setLoseCount] =
-    useState(0);
- 
-  const [signalWin, setSignalWin] =
-    useState(0);
-
-  const [signalLose, setSignalLose] =
-    useState(0);
-
-  const [aiSignal, setAiSignal] =
-    useState("WAIT");
-
-  const [aiConfidence, setAiConfidence] =
-    useState(0);
 
   function getDigit(hash) {
     for (
@@ -128,10 +105,9 @@ async function getSignal() {
 
 async function loadBlock(block) {
 
-  try {
+  if (loaded.current.has(block)) return;
 
-   if (loaded.current.has(block))
-     return false;
+  setLatest(String(block));
 
   const res = await fetch(
     "https://api.trongrid.io/wallet/getblockbynum",
@@ -148,9 +124,7 @@ async function loadBlock(block) {
 
   const json = await res.json();
 
-  if (!json.blockID) return false;
-
-  setLatest(String(block));
+  if (!json.blockID) return;
 
     const digit = getDigit(json.blockID);
 
@@ -159,7 +133,11 @@ async function loadBlock(block) {
     const signal = big
       ? "BIG"
       : "SMALL";
-  
+
+    // previous signal
+    const prevSignal =
+     lastSignalRef.current;
+
     // 🔥 RESULT TEXT
     setLiveSignal(signal);
 
@@ -186,9 +164,6 @@ async function loadBlock(block) {
 
     historyRef.current =
       updatedHistory;
-
-    const candleCount =
-      historyRef.current.length
 
     // latest 20 only
     const latest20 =
@@ -252,37 +227,6 @@ async function loadBlock(block) {
       setTrend("SIDEWAYS");
     }
 
-// ==================================================
-// 🔥 PREDICTION SYSTEM
-// ==================================================
-
-let nextPrediction = "WAIT";
-
-if (candleCount >= 20) {
-
-  if (trend === "SIDEWAYS") {
-
-  // latest SMALL + small%=50
-  if (
-    signal === "SMALL" &&
-    smallP === 50
-  ) {
-    nextPrediction = "SMALL";
-  }
-
-  // latest BIG + small%=60
-  else if (
-    signal === "BIG" &&
-    smallP === 60
-  ) {
-    nextPrediction = "BIG";
-  }
- }
-
-}
-
-setPrediction(nextPrediction);
-
     const open = lastClose.current;
 
     const close = big
@@ -299,37 +243,10 @@ setPrediction(nextPrediction);
       close,
     };
 
-// 🔥 UPDATE CHART
+    // 🔥 UPDATE CHART
     seriesRef.current.update(candle);
 
-// ==================================================
-// 🔥 CHECK PREVIOUS PREDICTION
-// ==================================================
-
-if (
-  pendingPredictionRef.current !==
-  "WAIT"
-) {
-
-  if (
-    pendingPredictionRef.current ===
-    signal
-  ) {
-
-    setSignalWin(prev => prev + 1);
-
-  } else {
-
-    setSignalLose(prev => prev + 1);
-
-  }
-
-}
-
-setPrediction(nextPrediction);
-
-pendingPredictionRef.current =
-  nextPrediction;
+    console.log(markersRef.current);
 
 // ==================================================
 // 🔥 B/S TRACKING SYSTEM
@@ -496,147 +413,10 @@ seriesRef.current.setMarkers(
 );
 
 // ==================================================
-// 🔥 AI SIGNAL SYSTEM
-// ==================================================
 
-if (historyRef.current.length >= 20) {
-
-  let bigScore = 0;
-  let smallScore = 0;
-
-  // 🔥 TREND
-  if (trend === "UP TREND") {
-    bigScore += 2;
-  }
-
-  if (trend === "DOWN TREND") {
-    smallScore += 2;
-  }
-
-  // 🔥 PERCENT
-  if (bigPercent >= 60) {
-    bigScore += 1;
-  }
-
-  if (smallPercent >= 60) {
-    smallScore += 1;
-  }
-
-  // 🔥 STREAK REVERSAL
-  if (
-    signal === "BIG" &&
-    streakRef.current >= 4
-  ) {
-    smallScore += 2;
-  }
-
-  if (
-    signal === "SMALL" &&
-    streakRef.current >= 4
-  ) {
-    bigScore += 2;
-  }
-
-  // 🔥 LAST 3 PATTERN
-  const last3 =
-    historyRef.current.slice(-3);
-
-  const pattern =
-    last3.join("-");
-
-  if (pattern === "BIG-BIG-BIG") {
-    smallScore += 1;
-  }
-
-  if (
-    pattern ===
-    "SMALL-SMALL-SMALL"
-  ) {
-    bigScore += 1;
-  }
-
-  // ==================================================
-  // FINAL AI RESULT
-  // ==================================================
-
-  const totalScore =
-    bigScore + smallScore;
-
-  if (bigScore > smallScore) {
-
-    setAiSignal("BIG");
-
-    setAiConfidence(
-      Math.round(
-        (bigScore / totalScore) * 100
-      )
-    );
-
-    markersRef.current.push({
-  time: candle.time,
-
-  position: "belowBar",
-
-  color: "#00ccff",
-
-  shape: "arrowUp",
-
-  text: `AI B ${Math.round(
-    (bigScore / totalScore) * 100
-  )}%`,
-});
-
-  } else if (
-    smallScore > bigScore
-  ) {
-
-    setAiSignal("SMALL");
-
-    setAiConfidence(
-      Math.round(
-        (smallScore / totalScore) * 100
-      )
-    );
-
-    markersRef.current.push({
-  time: candle.time,
-
-  position: "aboveBar",
-
-  color: "#ff00aa",
-
-  shape: "arrowDown",
-
-  text: `AI S ${Math.round(
-    (smallScore / totalScore) * 100
-  )}%`,
-});
-
-  } else {
-
-    setAiSignal("WAIT");
-
-    setAiConfidence(50);
+    loaded.current.add(block);
 
   }
-}
-
-// 🔥 ALL YOUR EXISTING CODE
-
-  loaded.current.add(block);
-
-  return true;
-
-} catch (e) {
-
-  console.log("BLOCK ERROR", e);
-
-  return false;
-  }
-
-}
-
-// ==================================================
 
   async function start() {
     setStatus("LOADING");
@@ -651,7 +431,9 @@ if (historyRef.current.length >= 20) {
 
     markersRef.current = [];
 
-// reset
+    activeArrowRef.current = null;
+
+    // reset
     lastSignalRef.current = null;
 
     streakRef.current = 0;
@@ -678,9 +460,6 @@ if (historyRef.current.length >= 20) {
 
     seriesRef.current.setData([]);
 
-    pendingPredictionRef.current =
-      "WAIT";
-
     const latestBlock =
       await getLatest();
 
@@ -705,13 +484,11 @@ if (historyRef.current.length >= 20) {
           currentBlock.current <=
           latestNow
         ) {
-        const ok = await loadBlock(
+          await loadBlock(
             currentBlock.current
           );
 
-          if (ok) {
-            currentBlock.current += 20;
-          }
+          currentBlock.current += 20;
         }
       },
       3000
@@ -895,38 +672,6 @@ if (historyRef.current.length >= 20) {
           </button>
         </div>
 
-        <div
-  style={{
-    marginTop: 10,
-    fontSize: 18,
-    fontWeight: "bold",
-    lineHeight: 1.8,
-  }}
->
-  <div
-    style={{
-      color:
-        aiSignal === "BIG"
-          ? "#00ff99"
-          : aiSignal === "SMALL"
-          ? "#ff3333"
-          : "#999",
-    }}
-  >
-    AI Signal: {aiSignal}
-  </div>
-
-  <div style={{ color: "#ffaa00" }}>
-    Confidence: {aiConfidence}%
-  </div>
-
-  <div style={{ color: "#fff" }}>
-    Win: {signalWin}
-    {" / "}
-    Lose: {signalLose}
-  </div>
-</div>
-
         {/* RIGHT PANEL */}
         <div
           style={{
@@ -942,10 +687,10 @@ if (historyRef.current.length >= 20) {
             style={{
               display: "flex",
 
-              gap: 3,
+              gap: 8,
 
               alignItems: "center",
-                         
+
               flexWrap: "wrap",
             }}
           >
@@ -954,7 +699,7 @@ if (historyRef.current.length >= 20) {
                 <span
                   key={i}
                   style={{
-                    fontSize: 16,
+                    fontSize: 22,
 
                     fontWeight:
                       "bold",
@@ -974,7 +719,6 @@ if (historyRef.current.length >= 20) {
           <div
             style={{
               textAlign: "right",
-              gap: 20,
             }}
           >
             <div
