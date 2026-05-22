@@ -89,13 +89,31 @@ export default function App() {
   }
 
 // 🔥 API SIGNAL
-async function getSignal() {
+  function getSignal(json) {
+
   try {
-    const res = await fetch(API);
 
-    const data = await res.json();
+    const blockHash =
+      json.blockID;
 
-    // RESULT ONLY
+    if (!blockHash ||
+       typeof blockHash !== "string"
+    ) {
+      return "WAIT";
+    }
+
+    const digit =
+      Number(
+        blockHash.slice(-1)
+      );
+
+    const signal =
+      digit >= 5
+       ? "BIG"
+       : "SMALL";
+
+     // RESULT ONLY  
+
     setLiveSignal(signal);
 
   } catch (e) {
@@ -244,7 +262,7 @@ async function loadBlock(block) {
     };
 
     // 🔥 UPDATE CHART
-    seriesRef.current.update(candle);
+    
 
     console.log(markersRef.current);
 
@@ -416,11 +434,16 @@ seriesRef.current.setMarkers(
 
     loaded.current.add(block);
 
+    return candle;
+
   }
 
   async function start() {
+
     setStatus("LOADING");
 
+    const candles = [];
+      
     if (liveRef.current) {
       clearInterval(liveRef.current);
     }
@@ -439,7 +462,7 @@ seriesRef.current.setMarkers(
     streakRef.current = 0;
 
     historyRef.current = [];
-
+ 
     setHover("-");
 
     setLatest("-");
@@ -463,13 +486,38 @@ seriesRef.current.setMarkers(
     const latestBlock =
       await getLatest();
 
-    let block = Number(startBlock);
+    const inputBlock =
+      startBlock === ""
+        ? latestBlock
+        : Math.min(
+          Number(startBlock)
+        );
+
+    let block = Math.max(0, inputBlock - 2000);
 
     while (block <= latestBlock) {
+
+      console.log("LOADING BLOCK", block);
+
+    const candle =
       await loadBlock(block);
 
+      if (candle) {
+        candles.push(candle);
+      }
+
+      await new Promise(
+        (r) => setTimeout(r, 300)
+      );
+
       block += 20;
+      
     }
+
+    seriesRef.current.setData(
+      candles
+
+    );
 
     currentBlock.current = block;
 
@@ -484,11 +532,23 @@ seriesRef.current.setMarkers(
           currentBlock.current <=
           latestNow
         ) {
-          await loadBlock(
+
+          console.log(
+            "LIVE BLOCK",
             currentBlock.current
           );
+        const candle =
+          await loadBlock(
+            currentBlock.current, true
+          );
 
+        if (candle) {
+          seriesRef.current.update(
+            candle
+          );
+        
           currentBlock.current += 20;
+          }
         }
       },
       3000
@@ -512,8 +572,19 @@ seriesRef.current.setMarkers(
   useEffect(() => {
     getSignal();
 
-    const t = setInterval(() => {
-      getSignal();
+    const t = setInterval(async () => {
+
+      try {
+
+      const res = await fetch(API);
+      const json = await res.json();
+
+      const signal = getSignal(json);
+
+      } catch (e) {
+        console.log("API error", e)
+      }
+
     }, 3000);
 
     return () => clearInterval(t);
