@@ -661,7 +661,7 @@ seriesRef.current.setMarkers(
       style={{
         background: "#111",
 
-        minHeight: "100vh",
+        minHeight: "100dvh",
 
         padding: 20,
       }}
@@ -895,7 +895,7 @@ seriesRef.current.setMarkers(
         style={{
           width: "100%",
 
-          height: 650,
+          height: "100%",
         }}
       />
     </div>
