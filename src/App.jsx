@@ -890,14 +890,14 @@ seriesRef.current.setMarkers(
       </div>
 
       {/* CHART */}
-      <div
-        ref={containerRef}
-        style={{
-          width: "100%",
+      <div className="app">
 
-          height: "100dvh",
-        }}
-      />
+  <div
+    ref={containerRef}
+    className="chart-container"
+  />
+
+</div>
     </div>
   );
 }
