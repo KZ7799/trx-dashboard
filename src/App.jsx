@@ -660,8 +660,7 @@ seriesRef.current.setMarkers(
     <div
   style={{
     background: "#111",
-    height: "100dvh",
-    overflow: "hidden",
+    height: "100vh",
     display: "flex",
     flexDirection: "column",
   }}
@@ -890,14 +889,12 @@ seriesRef.current.setMarkers(
       </div>
 
       {/* CHART */}
-      <div className="app">
 
   <div
     ref={containerRef}
-    className="chart-container"
+    style={{ flex: 1, width: "100%" }}
   />
 
-</div>
     </div>
   );
 }
