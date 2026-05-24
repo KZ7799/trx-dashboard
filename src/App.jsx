@@ -658,14 +658,14 @@ seriesRef.current.setMarkers(
 
   return (
     <div
-      style={{
-        background: "#111",
-
-        minHeight: "100dvh",
-
-        padding: 20,
-      }}
-    >
+  style={{
+    background: "#111",
+    height: "100dvh",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  }}
+>
       {/* HEADER */}
       <div
         style={{
