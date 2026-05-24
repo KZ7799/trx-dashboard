@@ -334,8 +334,8 @@ if (pauseRef.current > 0) {
       loseCountRef.current = 1;
 
       // 🔥 PAUSE RANDOM CANDLES
-      pauseRef.current = 
-      Math.floor(Math.random()*5)+3;
+      pauseRef.current = 4;
+      
 
       // 🔥 CLEAR CURRENT SIDE
       predictSideRef.current = null;
@@ -397,7 +397,7 @@ if (
 
     position: "aboveBar",
 
-    color: "#00ff99",
+    color: "#0084ff",
 
     shape: "arrowUp",
 
@@ -418,7 +418,7 @@ if (
 
     position: "belowBar",
 
-    color: "#ff3333",
+    color: "#0084ff",
 
     shape: "arrowDown",
 
@@ -493,7 +493,7 @@ seriesRef.current.setMarkers(
           Number(startBlock)
         );
 
-    let block = Math.max(0, inputBlock - 2000);
+    let block = Math.max(0, inputBlock - 4000);
 
     while (block <= latestBlock) {
 
