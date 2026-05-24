@@ -335,7 +335,6 @@ if (pauseRef.current > 0) {
 
       // 🔥 PAUSE RANDOM CANDLES
       pauseRef.current = 4;
-      
 
       // 🔥 CLEAR CURRENT SIDE
       predictSideRef.current = null;
@@ -397,7 +396,7 @@ if (
 
     position: "aboveBar",
 
-    color: "#0084ff",
+    color: "#0077ff",
 
     shape: "arrowUp",
 
@@ -418,7 +417,7 @@ if (
 
     position: "belowBar",
 
-    color: "#0084ff",
+    color: "#b433ff",
 
     shape: "arrowDown",
 
@@ -658,13 +657,14 @@ seriesRef.current.setMarkers(
 
   return (
     <div
-  style={{
-    background: "#111",
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-  }}
->
+      style={{
+        background: "#111",
+
+        minHeight: "100vh",
+
+        padding: 20,
+      }}
+    >
       {/* HEADER */}
       <div
         style={{
@@ -889,12 +889,14 @@ seriesRef.current.setMarkers(
       </div>
 
       {/* CHART */}
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
 
-  <div
-    ref={containerRef}
-    style={{ flex: 1, width: "100%" }}
-  />
-
+          height: 650,
+        }}
+      />
     </div>
   );
 }
