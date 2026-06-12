@@ -492,7 +492,7 @@ seriesRef.current.setMarkers(
           Number(startBlock)
         );
 
-    let block = Math.max(0, inputBlock - 4000);
+    let block = Math.max(0, inputBlock - 2000);
 
     while (block <= latestBlock) {
 
