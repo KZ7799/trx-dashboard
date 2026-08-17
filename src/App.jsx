@@ -235,7 +235,7 @@ export default function App() {
 
     const latestBlock = await getLatest();
     const inputBlock = startBlock === "" ? latestBlock : Number(startBlock);
-    let block = Math.max(0, inputBlock - 200); // 200 blocks history
+    let block = Math.max(0, inputBlock - 1000); //  blocks history
 
     const candles = [];
     while (block <= latestBlock) {
