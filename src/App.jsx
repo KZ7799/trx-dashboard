@@ -276,8 +276,8 @@ async function loadBlock(block) {
 function getBetSide(baseSide, step) {
   const oppositeSide = baseSide === "BIG" ? "SMALL" : "BIG";
   
-  // Step 4 ရောက်မှသာ ပြောင်းပြန် (Opposite Side) ထိုးမည်၊ ကျန်အဆင့်များတွင် Base Side အတိုင်း ထိုးမည်
-  if (step === 4) {
+  // Step 3 ရောက်မှသာ ပြောင်းပြန် (Opposite Side) ထိုးမည်၊ ကျန်အဆင့်များတွင် Base Side အတိုင်း ထိုးမည်
+  if (step === 3) {
     return oppositeSide;
   }
   return baseSide;
