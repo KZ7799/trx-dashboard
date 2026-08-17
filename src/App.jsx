@@ -588,11 +588,12 @@ seriesRef.current.setMarkers(
   }, []);
 
   useEffect(() => {
+    if (!containerRef.current) return;
+
     const chart = createChart(
       containerRef.current,
       {
-        width:
-          window.innerWidth - 40,
+        width: containerRef.current.clientWidth,
 
         height: 650,
 
@@ -630,6 +631,17 @@ seriesRef.current.setMarkers(
 
     seriesRef.current = series;
 
+    // 🔥 ResizeObserver handling chart layout updates
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries[0] && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: entries[0].contentRect.width,
+        });
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
     chart.subscribeCrosshairMove(
       (p) => {
         if (!p?.time) {
@@ -643,6 +655,7 @@ seriesRef.current.setMarkers(
     );
 
     return () => {
+      resizeObserver.disconnect();
       if (liveRef.current) {
         clearInterval(
           liveRef.current
