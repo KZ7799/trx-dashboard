@@ -267,7 +267,7 @@ async function loadBlock(block) {
     console.log(markersRef.current);
 
 // ==================================================
-// 🔥 B/S TRACKING SYSTEM
+// 🔥 B/S TRACKING SYSTEM (2 Loss Flip Logic Included)
 // ==================================================
 
 // 🔥 PAUSE MODE
@@ -309,11 +309,16 @@ if (pauseRef.current > 0) {
 
   } else {
 
+    // လက်ရှိထိုးထားသည့် Target Side (၂ ကြိမ်ရှုံးပါက ပြောင်းပြန် side ကို တွက်ချက်မည်)
+    let currentBetSide = predictSideRef.current;
+    
+    // ၃ ကြိမ်မြောက်ထိုးချိန် (loseCount 2 ရောက်နေချိန်) တွင် ပြောင်းပြန် side သို့ ခေတ္တပြောင်းထိုးမည်
+    if (loseCountRef.current === 2) {
+      currentBetSide = predictSideRef.current === "BIG" ? "SMALL" : "BIG";
+    }
+
     // ✅ WIN
-    if (
-      signal ===
-      predictSideRef.current
-    ) {
+    if (signal === currentBetSide) {
 
       markersRef.current.push({
         time: candle.time,
@@ -344,37 +349,40 @@ if (pauseRef.current > 0) {
       // ❌ LOSE
       loseCountRef.current += 1;
 
+      // နောက်တစ်ကြိမ် ထိုးရမည့် Side ကို သတ်မှတ်ခြင်း
+      // (loseCount 3 ဖြစ်သွားပါက မူလ Side အတိုင်း ပြန်ထိုးမည်)
+      let nextBetSide = predictSideRef.current;
+      if (loseCountRef.current === 2) {
+        // ၃ ကြိမ်မြောက်အတွက် ဘက်ပြောင်းထိုးရန်
+        nextBetSide = predictSideRef.current === "BIG" ? "SMALL" : "BIG";
+      }
+
       markersRef.current.push({
         time: candle.time,
 
         position:
-          predictSideRef.current ===
-          "BIG"
+          nextBetSide === "BIG"
             ? "aboveBar"
             : "belowBar",
 
         color:
-          predictSideRef.current ===
-          "BIG"
+          nextBetSide === "BIG"
             ? "#00ff99"
             : "#ff3333",
 
         shape:
-          predictSideRef.current ===
-          "BIG"
+          nextBetSide === "BIG"
             ? "arrowUp"
             : "arrowDown",
 
         text:
           `${loseCountRef.current}${
-            predictSideRef.current ===
-            "BIG"
+            nextBetSide === "BIG"
               ? "B"
               : "S"
           }`,
       });
 
-      // keep tracking same side
     }
   }
 }
