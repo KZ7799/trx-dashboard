@@ -267,7 +267,7 @@ async function loadBlock(block) {
     console.log(markersRef.current);
 
 // ==================================================
-// 🔥 B/S TRACKING SYSTEM (Continuous Martingale Step)
+// 🔥 B/S TRACKING SYSTEM (Bug Fixed & State Synced)
 // ==================================================
 
 // 🔥 PAUSE MODE
@@ -276,7 +276,7 @@ if (pauseRef.current > 0) {
 
 } else {
 
-  // Signal သစ် ပြန်ယူသည့် အပိုင်း (1 သို့ မပြောင်းဘဲ ရောက်ရှိနေသည့် loseCount အတိုင်း ဆက်သွားမည်)
+  // Signal သစ် စတင်ယူသည့် အပိုင်း
   if (!predictSideRef.current) {
 
     predictSideRef.current = signal;
@@ -307,15 +307,8 @@ if (pauseRef.current > 0) {
 
   } else {
 
-    // ၂ ကြိမ် ရှုံးထားပါက (loseCount === 2) ဘက်ပြောင်းထိုးထားသည့် Side ကို စစ်ဆေးမည်
-    let currentBetSide = predictSideRef.current;
-    
-    if (loseCountRef.current === 2) {
-      currentBetSide = predictSideRef.current === "BIG" ? "SMALL" : "BIG";
-    }
-
-    // ✅ WIN
-    if (signal === currentBetSide) {
+    // ✅ WIN (လက်ရှိ predictSideRef ဖြင့် တိုက်ရိုက် စစ်ဆေးမည်)
+    if (signal === predictSideRef.current) {
 
       markersRef.current.push({
         time: candle.time,
@@ -332,7 +325,7 @@ if (pauseRef.current > 0) {
         text: "W",
       });
 
-      // 🔥 WIN ရောက်မှသာ loseCount ကို 1 သို့ RESET ပြန်လုပ်မည်
+      // 🔥 WIN နိုင်သွားပါက RESET ပြန်လုပ်မည်
       loseCountRef.current = 1;
 
       pauseRef.current = 4;
@@ -342,17 +335,20 @@ if (pauseRef.current > 0) {
     } else {
 
       // ❌ LOSE
-      loseCountRef.current += 1; // ရှုံးသည့်အတွက် Step ဆက်တက်မည် (2 -> 3)
+      loseCountRef.current += 1;
 
-      if (loseCountRef.current - 1 === 2) {
-        // FLIP ဘက်ပြောင်းထိုးစဉ် ရှုံးသွားခြင်း (Step 2 ရှုံးပြီး Step 3 ရောက်သွားချိန်)
-        // predictSide ကို null လုပ်ကာ နောက် Candle တွင် Signal သစ်အတိုင်း ပြောင်းထိုးမည်
-        // (loseCountRef ကို 1 သို့ ပြန်မလျှော့ဘဲ 3 အတိုင်း ဆက်သွားမည်)
+      // Flip ထိုးထားသည့် 2 ကြိမ်မြောက် (3B/3S) ရှုံးသွားပါက predictSide ကို null လုပ်၍ Signal သစ် ပြန်ယူမည်
+      if (loseCountRef.current === 3) {
+        
         predictSideRef.current = null;
 
       } else {
-        // Step 1 ရှုံး၍ Step 2 အတွက် ဘက်ပြောင်းထိုးရန် Marker ပြမည်
+
+        // 1 ကြိမ် ရှုံးပါက ဘက်ပြောင်းထိုးရန် predictSideRef Variable ကို အမှန်တကယ် ပြောင်းလဲပေးမည်
         let nextBetSide = predictSideRef.current === "BIG" ? "SMALL" : "BIG";
+        
+        // 🔥 BUG FIX: Variable ကို အမှန်ပြောင်းပေးမှ နောက် Candle စစ်ချိန်တွင် မမှားမည်ဖြစ်သည်
+        predictSideRef.current = nextBetSide; 
 
         markersRef.current.push({
           time: candle.time,
@@ -379,8 +375,8 @@ if (pauseRef.current > 0) {
                 : "S"
             }`,
         });
-      }
 
+      }
     }
   }
 }
