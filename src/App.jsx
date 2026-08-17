@@ -267,8 +267,21 @@ async function loadBlock(block) {
     console.log(markersRef.current);
 
 // ==================================================
-// 🔥 B/S TRACKING SYSTEM (Bug Fixed & State Synced)
+// 🔥 CUSTOM DYNAMIC SEQUENCE B/S TRACKING SYSTEM
+// BIG Start  : 1B -> 2B -> 3B -> 4S -> 5B -> 6B ... W
+// SMALL Start: 1S -> 2S -> 3S -> 4B -> 5S -> 6S ... W
 // ==================================================
+
+// 🔥 Step အလိုက် Bet လုပ်ရမည့် Side ကို တွက်ချက်ပေးသည့် Helper Function
+function getBetSide(baseSide, step) {
+  const oppositeSide = baseSide === "BIG" ? "SMALL" : "BIG";
+  
+  // Step 4 ရောက်မှသာ ပြောင်းပြန် (Opposite Side) ထိုးမည်၊ ကျန်အဆင့်များတွင် Base Side အတိုင်း ထိုးမည်
+  if (step === 4) {
+    return oppositeSide;
+  }
+  return baseSide;
+}
 
 // 🔥 PAUSE MODE
 if (pauseRef.current > 0) {
@@ -276,107 +289,63 @@ if (pauseRef.current > 0) {
 
 } else {
 
-  // Signal သစ် စတင်ယူသည့် အပိုင်း
+  // Signal သစ် စတင်ယူသည့် အပိုင်း (BIG သို့မဟုတ် SMALL မည်သည့် Signal ဖြစ်စေ စတင်မည်)
   if (!predictSideRef.current) {
 
-    predictSideRef.current = signal;
+    predictSideRef.current = signal; // "BIG" သို့မဟုတ် "SMALL" ကို Base Side အဖြစ် မှတ်သားမည်
+    loseCountRef.current = 1;
 
     markersRef.current.push({
       time: candle.time,
-
-      position:
-        signal === "BIG"
-          ? "aboveBar"
-          : "belowBar",
-
-      color:
-        signal === "BIG"
-          ? "#00ff99"
-          : "#ff3333",
-
-      shape:
-        signal === "BIG"
-          ? "arrowUp"
-          : "arrowDown",
-
-      text:
-        loseCountRef.current === 1
-          ? (signal === "BIG" ? "B" : "S")
-          : `${loseCountRef.current}${signal === "BIG" ? "B" : "S"}`,
+      position: signal === "BIG" ? "aboveBar" : "belowBar",
+      color: signal === "BIG" ? "#00ff99" : "#ff3333",
+      shape: signal === "BIG" ? "arrowUp" : "arrowDown",
+      text: signal === "BIG" ? "B" : "S",
     });
 
   } else {
 
-    // ✅ WIN (လက်ရှိ predictSideRef ဖြင့် တိုက်ရိုက် စစ်ဆေးမည်)
-    if (signal === predictSideRef.current) {
+    // လက်ရှိ Step တွင် ထိုးထားသည့် Bet Side ကို တွက်ချက်မည်
+    const currentBetSide = getBetSide(
+      predictSideRef.current,
+      loseCountRef.current
+    );
+
+    // ✅ WIN
+    if (signal === currentBetSide) {
 
       markersRef.current.push({
         time: candle.time,
-
-        position:
-          signal === "BIG"
-            ? "aboveBar"
-            : "belowBar",
-
+        position: signal === "BIG" ? "aboveBar" : "belowBar",
         color: "#ffff00",
-
         shape: "circle",
-          
         text: "W",
       });
 
-      // 🔥 WIN နိုင်သွားပါက RESET ပြန်လုပ်မည်
+      // 🔥 RESET ON WIN
       loseCountRef.current = 1;
-
       pauseRef.current = 4;
-
       predictSideRef.current = null;
 
     } else {
 
       // ❌ LOSE
-      loseCountRef.current += 1;
+      loseCountRef.current += 1; // Step တိုးမည် (1 -> 2 -> 3 -> 4 ...)
 
-      // Flip ထိုးထားသည့် 2 ကြိမ်မြောက် (3B/3S) ရှုံးသွားပါက predictSide ကို null လုပ်၍ Signal သစ် ပြန်ယူမည်
-      if (loseCountRef.current === 3) {
-        
-        predictSideRef.current = null;
+      // နောက်တစ်ကြိမ် ထိုးရမည့် Side ကို Step အလိုက် တွက်ချက်မည်
+      const nextBetSide = getBetSide(
+        predictSideRef.current,
+        loseCountRef.current
+      );
 
-      } else {
+      markersRef.current.push({
+        time: candle.time,
+        position: nextBetSide === "BIG" ? "aboveBar" : "belowBar",
+        color: nextBetSide === "BIG" ? "#00ff99" : "#ff3333",
+        shape: nextBetSide === "BIG" ? "arrowUp" : "arrowDown",
+        text: `${loseCountRef.current}${nextBetSide === "BIG" ? "B" : "S"}`,
+      });
 
-        // 1 ကြိမ် ရှုံးပါက ဘက်ပြောင်းထိုးရန် predictSideRef Variable ကို အမှန်တကယ် ပြောင်းလဲပေးမည်
-        let nextBetSide = predictSideRef.current === "BIG" ? "SMALL" : "BIG";
-        
-        // 🔥 BUG FIX: Variable ကို အမှန်ပြောင်းပေးမှ နောက် Candle စစ်ချိန်တွင် မမှားမည်ဖြစ်သည်
-        predictSideRef.current = nextBetSide; 
-
-        markersRef.current.push({
-          time: candle.time,
-
-          position:
-            nextBetSide === "BIG"
-              ? "aboveBar"
-              : "belowBar",
-
-          color:
-            nextBetSide === "BIG"
-              ? "#00ff99"
-              : "#ff3333",
-
-          shape:
-            nextBetSide === "BIG"
-              ? "arrowUp"
-              : "arrowDown",
-
-          text:
-            `${loseCountRef.current}${
-              nextBetSide === "BIG"
-                ? "B"
-                : "S"
-            }`,
-        });
-
-      }
     }
   }
 }
